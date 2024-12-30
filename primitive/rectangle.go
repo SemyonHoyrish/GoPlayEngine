@@ -12,7 +12,7 @@ func (r Rectangle) GetPrimitiveType() PrimitiveType {
 	return RectanglePrimitive
 }
 
-// GetColor returns color of rectangle.
+// GetColor returns color of the rectangle.
 func (r Rectangle) GetColor() Color {
 	return r.Color
 }

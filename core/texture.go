@@ -4,6 +4,7 @@ import (
 	"github.com/SemyonHoyrish/GoPlayEngine/basic"
 	"github.com/SemyonHoyrish/GoPlayEngine/primitive"
 	"github.com/SemyonHoyrish/GoPlayEngine/resource"
+	"math"
 )
 
 // Texture represent source to create actual texture, which will be rendered.
@@ -35,8 +36,17 @@ func (t *Texture) GetSize() basic.Size {
 				Height: t.primitive.(primitive.Rectangle).Height,
 			}
 		case primitive.CirclePrimitive:
+			return basic.Size{
+				Width:  t.primitive.(primitive.Circle).Radius,
+				Height: t.primitive.(primitive.Circle).Radius,
+			}
 		case primitive.EllipsePrimitive:
 		case primitive.LinePrimitive:
+			vec := t.primitive.(primitive.Line).Definition
+			return basic.Size{
+				Width:  float32(math.Abs(float64(vec.From.X - vec.To.X))),
+				Height: float32(math.Abs(float64(vec.From.Y - vec.To.Y))),
+			}
 		}
 
 		panic("to implement")

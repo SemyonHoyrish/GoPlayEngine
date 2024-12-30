@@ -11,7 +11,7 @@ type Mouse struct {
 
 // GetPosition return position of mouse relative to window space,
 // position related to current position in event queue, may be different from os mouse position in case
-// not all events processed to current time.
+// not all events have been processed up to the current time.
 func (m *Mouse) GetPosition() basic.Point {
 	x, y, _ := sdl.GetMouseState()
 

@@ -5,6 +5,7 @@ import (
 	"github.com/SemyonHoyrish/GoPlayEngine/core"
 	"github.com/SemyonHoyrish/GoPlayEngine/input"
 	"github.com/SemyonHoyrish/GoPlayEngine/primitive"
+	"github.com/veandco/go-sdl2/gfx"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/ttf"
 	"os"
@@ -55,7 +56,7 @@ func NewEngine() *Engine {
 		panic(err)
 	}
 
-	r, err := sdl.CreateRenderer(w, -1, sdl.RENDERER_ACCELERATED)
+	r, err := sdl.CreateRenderer(w, -1, sdl.RENDERER_ACCELERATED|sdl.RENDERER_PRESENTVSYNC)
 	if err != nil {
 		panic(err)
 	}
@@ -123,11 +124,27 @@ func (e *Engine) render(nodes []core.BaseNodeInterface) {
 						H: size.Height,
 					})
 				case primitive.CirclePrimitive:
-					panic("TODO implement")
+					if size.Width != size.Height {
+						fmt.Println(fmt.Errorf("circle width and height differ, possibly trying to override with node size (node id = %d)", objNode.GetID()))
+						break
+					}
+					gfx.FilledCircleColor(
+						e.renderer,
+						int32(objNode.GetAbsolutePosition().X-size.Width/2),
+						int32(objNode.GetAbsolutePosition().Y-size.Height/2),
+						int32(size.Width),
+						c,
+					)
 				case primitive.EllipsePrimitive:
 					panic("TODO implement")
 				case primitive.LinePrimitive:
-					panic("TODO implement")
+					npos := objNode.GetPosition()
+					vec := prim.(primitive.Line).Definition
+					if npos != vec.From {
+						fmt.Println(fmt.Errorf("line start and node position differ (node id=%d). For more info see docs for primitive.Line", objNode.GetID()))
+						break
+					}
+					e.renderer.DrawLineF(vec.From.X, vec.From.Y, vec.To.X, vec.To.Y)
 				}
 			} else {
 				image := t.GetImage()
