@@ -1,7 +1,7 @@
 # [v0.3.0] Overlaps
 ### NEW
 #### Overlaps system
-This system allows to attach Overlap or ComposedOverlap to a node, and then determine if some overlaps overlapping each other.
+This system allows to attach `Overlap` or `ComposedOverlap` to a nodes, and then determine whether if they overlaps overlapping each other or not. Additionally, it provides `MouseOver` function to check whether mouse is currently hovering an overlap.
 - Overlap
 - ComposedOverlap
 - BaseNode.{SetOverlap, GetOverlap, RemoveOverlap}
