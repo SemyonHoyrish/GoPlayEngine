@@ -6,18 +6,25 @@ import (
 	"github.com/SemyonHoyrish/GoPlayEngine/resource"
 )
 
+// Texture represent source to create actual texture, which will be rendered.
 type Texture struct {
 	primitive primitive.PrimitiveInterface
 	image     *resource.Image
 }
 
+// NewTextureFromImage creates texture source based on Image resource
 func NewTextureFromImage(i *resource.Image) *Texture {
 	return &Texture{image: i}
 }
+
+// NewTextureFromPrimitive creates texture source based on primitive
 func NewTextureFromPrimitive(p primitive.PrimitiveInterface) *Texture {
 	return &Texture{primitive: p}
 }
 
+// GetSize calculates size based on source provided on creation,
+// returned value describes size needed to render texture as it was intended,
+// can be overridden by size of node.
 func (t *Texture) GetSize() basic.Size {
 	if t.primitive != nil {
 		// TODO: implement all cases
@@ -42,7 +49,10 @@ func (t *Texture) GetSize() basic.Size {
 	}
 }
 
+// GetPrimitive returns primitive on which this texture was created, nil if was created on Image.
 func (t *Texture) GetPrimitive() primitive.PrimitiveInterface { return t.primitive }
-func (t *Texture) GetImage() *resource.Image                  { return t.image }
+
+// GetImage returns Image in which this texture was created, nil if was created on primitive.
+func (t *Texture) GetImage() *resource.Image { return t.image }
 
 // TODO: ?Move creating Texture to core.Texture instead of Engine.render

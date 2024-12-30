@@ -2,6 +2,7 @@ package basic
 
 type IDType = uint64
 
+// BaseInterface used only for internal purposes
 type BaseInterface interface {
 	GetID() IDType
 	GetName() string
@@ -10,11 +11,14 @@ type BaseInterface interface {
 
 var baseNextID IDType = 1
 
+// Base used only for internal purposes
+// Base have to be initialized with MakeBase function
 type Base struct {
 	id   IDType
 	name string
 }
 
+// MakeBase used only for internal purposes
 func MakeBase() Base {
 	b := Base{
 		id:   baseNextID,

@@ -1,6 +1,7 @@
 package primitive
 
-type PrimitiveType = uint32
+// PrimitiveType represents existing types of primitive objects of game engine
+type PrimitiveType uint32
 
 const (
 	RectanglePrimitive PrimitiveType = iota
@@ -9,6 +10,7 @@ const (
 	LinePrimitive      PrimitiveType = iota
 )
 
+// PrimitiveInterface describes primitive object
 type PrimitiveInterface interface {
 	GetPrimitiveType() PrimitiveType
 	GetColor() Color

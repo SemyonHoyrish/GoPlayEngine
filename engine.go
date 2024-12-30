@@ -13,10 +13,11 @@ import (
 )
 
 type Engine struct {
-	activeScene *core.Scene
-	running     bool
-	started     bool
-	exitCode    int
+	activeScene                   *core.Scene
+	activeSceneNoFunctionReported bool
+	running                       bool
+	started                       bool
+	exitCode                      int
 
 	wg *sync.WaitGroup
 
@@ -30,14 +31,15 @@ type Engine struct {
 
 func NewEngine() *Engine {
 	engine := &Engine{
-		activeScene: nil,
-		running:     false,
-		started:     false,
-		exitCode:    0,
-		wg:          &sync.WaitGroup{},
-		window:      nil,
-		renderer:    nil,
-		mouse:       nil,
+		activeScene:                   nil,
+		activeSceneNoFunctionReported: false,
+		running:                       false,
+		started:                       false,
+		exitCode:                      0,
+		wg:                            &sync.WaitGroup{},
+		window:                        nil,
+		renderer:                      nil,
+		mouse:                         nil,
 	}
 
 	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
@@ -73,10 +75,13 @@ func NewEngine() *Engine {
 	return engine
 }
 
+// SetActiveScene sets active scene in the engine, which will be used
+// to render text frame
 func (e *Engine) SetActiveScene(scene *core.Scene) {
 	e.activeScene = scene
 }
 
+// GetActiveScene returns current scene of the Engine
 func (e *Engine) GetActiveScene() *core.Scene {
 	return e.activeScene
 }
@@ -192,6 +197,7 @@ func (e *Engine) render(nodes []core.BaseNodeInterface) {
 	}
 }
 
+// GetMouse returns Engine instance of input.Mouse, which is preferable to use
 func (e *Engine) GetMouse() *input.Mouse {
 	if e.mouse == nil {
 		e.mouse = &input.Mouse{}
@@ -201,10 +207,9 @@ func (e *Engine) GetMouse() *input.Mouse {
 }
 
 // Run creates window and start rendering activeScene.
-// updateFunc is called before render of every frame
 //
 // It is required to call Run in main thread
-func (e *Engine) Run(updateFunc func()) {
+func (e *Engine) Run() {
 	if e.started {
 		return
 	}
@@ -215,7 +220,12 @@ func (e *Engine) Run(updateFunc func()) {
 	e.wg.Add(1)
 	go func() {
 		for e.running {
-			updateFunc()
+			if e.activeScene.GetUpdateFunction() != nil {
+				e.activeScene.GetUpdateFunction()()
+			} else if !e.activeSceneNoFunctionReported {
+				fmt.Println(fmt.Errorf("no update function on scene ID=(%d)", e.activeScene.GetID()))
+				e.activeSceneNoFunctionReported = true
+			}
 
 			nodes := e.activeScene.GetAllNodes()
 

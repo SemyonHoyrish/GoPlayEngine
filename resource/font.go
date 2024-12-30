@@ -5,6 +5,8 @@ import (
 	"github.com/veandco/go-sdl2/ttf"
 )
 
+// Font used to link path to file on disk and its loaded content,
+// have to be initialized with NewFont
 type Font struct {
 	path string
 
@@ -20,6 +22,8 @@ func NewFont(path string) *Font {
 	}
 }
 
+// Reload load content of file and stores it as font in memory.
+// Reload called automatically if it was not called before.
 func (f *Font) Reload(fontSize int) {
 	font, err := ttf.OpenFont(f.path, fontSize)
 	if err != nil {
@@ -30,6 +34,7 @@ func (f *Font) Reload(fontSize int) {
 	}
 }
 
+// GetTTFFont is an internal function, returns font representation used to render it.
 func (f *Font) GetTTFFont(fontSize int) *ttf.Font {
 	loaded, ok := f.loaded[fontSize]
 	if !ok || !loaded {
