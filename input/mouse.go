@@ -5,7 +5,9 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 )
 
-// Mouse represent mouse controller
+// Mouse represent mouse controller.
+// It is preferable to use one instance of Mouse, which initialized in Engine,
+// rather than initialize multiple.
 type Mouse struct {
 }
 

@@ -13,6 +13,7 @@ import (
 	"sync"
 )
 
+// Engine is main structure, which links everything together, and behaves like entry point for your game.
 type Engine struct {
 	activeScene                   *core.Scene
 	activeSceneNoFunctionReported bool
@@ -99,69 +100,73 @@ func (e *Engine) render(nodes []core.BaseNodeInterface) {
 
 			t := objNode.GetTexture()
 
-			size := node.GetSize()
-			if size.Width == 0 && size.Height == 0 {
-				size = t.GetSize()
+			if t != nil {
+				size := node.GetSize()
 				if size.Width == 0 && size.Height == 0 {
-					err := fmt.Errorf("size of node (id=%d) is zero still after resolution", objNode.GetID())
-					fmt.Println(err)
-				}
-			}
-
-			if t.GetPrimitive() != nil {
-				// TODO: handle errors
-				prim := t.GetPrimitive()
-
-				c := prim.GetColor()
-				e.renderer.SetDrawColor(c.R, c.G, c.B, c.A)
-
-				switch prim.GetPrimitiveType() {
-				case primitive.RectanglePrimitive:
-					e.renderer.FillRectF(&sdl.FRect{
-						X: objNode.GetAbsolutePosition().X - size.Width/2,
-						Y: objNode.GetAbsolutePosition().Y - size.Height/2,
-						W: size.Width,
-						H: size.Height,
-					})
-				case primitive.CirclePrimitive:
-					if size.Width != size.Height {
-						fmt.Println(fmt.Errorf("circle width and height differ, possibly trying to override with node size (node id = %d)", objNode.GetID()))
-						break
+					size = t.GetSize()
+					if size.Width == 0 && size.Height == 0 {
+						err := fmt.Errorf("size of node (id=%d) is zero still after resolution", objNode.GetID())
+						fmt.Println(err)
 					}
-					gfx.FilledCircleColor(
-						e.renderer,
-						int32(objNode.GetAbsolutePosition().X-size.Width/2),
-						int32(objNode.GetAbsolutePosition().Y-size.Height/2),
-						int32(size.Width),
-						c,
-					)
-				case primitive.EllipsePrimitive:
-					panic("TODO implement")
-				case primitive.LinePrimitive:
-					npos := objNode.GetPosition()
-					vec := prim.(primitive.Line).Definition
-					if npos != vec.From {
-						fmt.Println(fmt.Errorf("line start and node position differ (node id=%d). For more info see docs for primitive.Line", objNode.GetID()))
-						break
-					}
-					e.renderer.DrawLineF(vec.From.X, vec.From.Y, vec.To.X, vec.To.Y)
 				}
-			} else {
-				image := t.GetImage()
-				if image.GetSurface() == nil {
-					fmt.Println(fmt.Errorf("no image for node id %d", objNode.GetID()))
+
+				if t.GetPrimitive() != nil {
+					// TODO: handle errors
+					prim := t.GetPrimitive()
+
+					c := prim.GetColor()
+					e.renderer.SetDrawColor(c.R, c.G, c.B, c.A)
+
+					switch prim.GetPrimitiveType() {
+					case primitive.RectanglePrimitive:
+						e.renderer.FillRectF(&sdl.FRect{
+							X: objNode.GetAbsolutePosition().X - size.Width/2,
+							Y: objNode.GetAbsolutePosition().Y - size.Height/2,
+							W: size.Width,
+							H: size.Height,
+						})
+					case primitive.CirclePrimitive:
+						if size.Width != size.Height {
+							fmt.Println(fmt.Errorf("circle width and height differ, possibly trying to override with node size (node id = %d)", objNode.GetID()))
+							break
+						}
+						gfx.FilledCircleColor(
+							e.renderer,
+							int32(objNode.GetAbsolutePosition().X-size.Width/2),
+							int32(objNode.GetAbsolutePosition().Y-size.Height/2),
+							int32(size.Width),
+							c,
+						)
+					case primitive.EllipsePrimitive:
+						panic("TODO implement")
+					case primitive.LinePrimitive:
+						npos := objNode.GetPosition()
+						vec := prim.(primitive.Line).Definition
+						if npos != vec.From {
+							fmt.Println(fmt.Errorf("line start and node position differ (node id=%d). For more info see docs for primitive.Line", objNode.GetID()))
+							break
+						}
+						e.renderer.DrawLineF(vec.From.X, vec.From.Y, vec.To.X, vec.To.Y)
+					}
+				} else if t.GetImage() != nil {
+					image := t.GetImage()
+					if image.GetSurface() == nil {
+						fmt.Println(fmt.Errorf("no image for node id %d", objNode.GetID()))
+					} else {
+						tx, err := e.renderer.CreateTextureFromSurface(image.GetSurface())
+						_ = err // TODO:
+
+						e.renderer.CopyF(tx, nil, &sdl.FRect{
+							X: objNode.GetAbsolutePosition().X - size.Width/2,
+							Y: objNode.GetAbsolutePosition().Y - size.Height/2,
+							W: size.Width,
+							H: size.Height,
+						})
+
+						tx.Destroy()
+					}
 				} else {
-					tx, err := e.renderer.CreateTextureFromSurface(image.GetSurface())
-					_ = err // TODO:
-
-					e.renderer.CopyF(tx, nil, &sdl.FRect{
-						X: objNode.GetAbsolutePosition().X - size.Width/2,
-						Y: objNode.GetAbsolutePosition().Y - size.Height/2,
-						W: size.Width,
-						H: size.Height,
-					})
-
-					tx.Destroy()
+					fmt.Println(fmt.Errorf("node has empty texture (node id = %d)", node.GetID()))
 				}
 			}
 
@@ -273,6 +278,7 @@ func (e *Engine) Run() {
 	os.Exit(e.exitCode)
 }
 
+// Exit tries to gracefully shutdown game engine and exit with provided code.
 func (e *Engine) Exit(code int) {
 	e.exitCode = code
 	e.running = false

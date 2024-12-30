@@ -1,6 +1,9 @@
 package core
 
-import "github.com/SemyonHoyrish/GoPlayEngine/basic"
+import (
+	"fmt"
+	"github.com/SemyonHoyrish/GoPlayEngine/basic"
+)
 
 // LayerType determine order of rendering of objects (objects that renders later, renders on top of previous ones)
 // 0 used for objects that should be rendered first, e.g. background object.
@@ -37,6 +40,10 @@ type BaseNodeInterface interface {
 
 	GetParent() BaseNodeInterface
 	SetParent(BaseNodeInterface)
+
+	SetOverlap(OverlapInterface)
+	GetOverlap() OverlapInterface
+	RemoveOverlap()
 }
 
 // BaseNode is an implementation of BaseNodeInterface, which is embedded by any other node in engine.
@@ -49,6 +56,8 @@ type BaseNode struct {
 	layer    LayerType
 
 	parent BaseNodeInterface
+
+	overlap OverlapInterface
 }
 
 func NewBaseNode() *BaseNode {
@@ -96,3 +105,21 @@ func (b *BaseNode) GetParent() BaseNodeInterface { return b.parent }
 
 // SetParent used internally, sets parent of node. User invocation of this function can lead to unexpected behavior.
 func (b *BaseNode) SetParent(p BaseNodeInterface) { b.parent = p }
+
+// SetOverlap attaches overlap the node
+func (b *BaseNode) SetOverlap(o OverlapInterface) {
+	fmt.Println(b)
+	o.SetNode(b)
+	b.overlap = o
+}
+
+// GetOverlap returns attached overlap
+func (b *BaseNode) GetOverlap() OverlapInterface {
+	return b.overlap
+}
+
+// RemoveOverlap detaches overlap from node
+func (b *BaseNode) RemoveOverlap() {
+	b.overlap.SetNode(nil)
+	b.overlap = nil
+}
