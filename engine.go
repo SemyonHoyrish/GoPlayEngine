@@ -10,7 +10,6 @@ import (
 	"github.com/veandco/go-sdl2/ttf"
 	"os"
 	"sort"
-	"sync"
 )
 
 // Engine is main structure, which links everything together, and behaves like entry point for your game.
@@ -21,12 +20,13 @@ type Engine struct {
 	started                       bool
 	exitCode                      int
 
-	wg *sync.WaitGroup
-
 	window   *sdl.Window
 	renderer *sdl.Renderer
 
 	mouse *input.Mouse
+
+	// TODO: move to engine configuration
+	maxEventsPolledPerRender int
 
 	cleanUp func()
 }
@@ -38,10 +38,11 @@ func NewEngine() *Engine {
 		running:                       false,
 		started:                       false,
 		exitCode:                      0,
-		wg:                            &sync.WaitGroup{},
 		window:                        nil,
 		renderer:                      nil,
 		mouse:                         nil,
+
+		maxEventsPolledPerRender: 10,
 	}
 
 	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
@@ -65,8 +66,6 @@ func NewEngine() *Engine {
 	engine.window = w
 	engine.renderer = r
 
-	engine.wg = &sync.WaitGroup{}
-
 	engine.cleanUp = func() {
 		engine.renderer.Destroy()
 		engine.window.Destroy()
@@ -81,6 +80,7 @@ func NewEngine() *Engine {
 // to render text frame
 func (e *Engine) SetActiveScene(scene *core.Scene) {
 	e.activeScene = scene
+	e.activeSceneNoFunctionReported = false
 }
 
 // GetActiveScene returns current scene of the Engine
@@ -239,9 +239,28 @@ func (e *Engine) Run() {
 	e.running = true
 	e.started = true
 
-	e.wg.Add(1)
-	go func() {
-		for e.running {
+	for e.running {
+		// Handle events
+		{
+			iters := 0
+			for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
+				iters += 1
+
+				switch event.(type) {
+				case *sdl.QuitEvent:
+					e.running = false
+
+					//TODO:
+				}
+
+				if iters == e.maxEventsPolledPerRender {
+					break
+				}
+			}
+		}
+
+		// Render
+		{
 			if e.activeScene.GetUpdateFunction() != nil {
 				e.activeScene.GetUpdateFunction()()
 			} else if !e.activeSceneNoFunctionReported {
@@ -257,22 +276,7 @@ func (e *Engine) Run() {
 			e.render(nodes)
 			e.renderer.Present()
 		}
-		e.wg.Done()
-	}()
-
-	for e.running {
-		event := sdl.PollEvent()
-		if event != nil {
-			switch event.(type) {
-			case *sdl.QuitEvent:
-				e.running = false
-
-				//TODO:
-			}
-		}
 	}
-
-	e.wg.Wait()
 
 	e.cleanUp()
 	os.Exit(e.exitCode)
