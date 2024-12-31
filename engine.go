@@ -40,7 +40,7 @@ func NewEngine() *Engine {
 		exitCode:                      0,
 		window:                        nil,
 		renderer:                      nil,
-		mouse:                         nil,
+		mouse:                         input.NewMouse(),
 
 		maxEventsPolledPerRender: 10,
 	}
@@ -221,10 +221,6 @@ func (e *Engine) render(nodes []core.BaseNodeInterface) {
 
 // GetMouse returns Engine instance of input.Mouse, which is preferable to use
 func (e *Engine) GetMouse() *input.Mouse {
-	if e.mouse == nil {
-		e.mouse = &input.Mouse{}
-	}
-
 	return e.mouse
 }
 
@@ -251,11 +247,14 @@ func (e *Engine) Run() {
 			for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 				iters += 1
 
+				//TODO:
 				switch event.(type) {
 				case *sdl.QuitEvent:
 					e.running = false
 
-					//TODO:
+				case *sdl.MouseButtonEvent:
+					e.GetMouse().SetLastEvent(event.(*sdl.MouseButtonEvent))
+
 				}
 
 				if iters == e.maxEventsPolledPerRender {
