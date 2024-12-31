@@ -228,6 +228,11 @@ func (e *Engine) GetMouse() *input.Mouse {
 	return e.mouse
 }
 
+// GetTicks returns number of milliseconds since SDL was initialized in NewEngine function
+func (e *Engine) GetTicks() uint64 {
+	return sdl.GetTicks64()
+}
+
 // Run creates window and start rendering activeScene.
 //
 // It is required to call Run in main thread
