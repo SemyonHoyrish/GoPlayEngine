@@ -11,12 +11,15 @@ type Mouse struct {
 	// 0 - no last event, 1 - last event mouse up, 2 - last event mouse down
 	// uint32 used instead of MouseButtonType because sdl mouse event provides some index which starts from 1 for some reason
 	buttonLastEvent map[uint32]uint32
+
+	deferredChanges map[uint32]uint32
 }
 
 // NewMouse initialize new Mouse object, should be called only once (done inside Engine)
 func NewMouse() *Mouse {
 	return &Mouse{
 		buttonLastEvent: make(map[uint32]uint32),
+		deferredChanges: make(map[uint32]uint32),
 	}
 }
 
@@ -49,7 +52,7 @@ func (m *Mouse) ButtonPressed(btn MouseButtonType) bool {
 func (m *Mouse) ButtonDown(btn MouseButtonType) bool {
 	btnInd := uint32(btn) + 1
 	if m.buttonLastEvent[btnInd] == 2 {
-		m.buttonLastEvent[btnInd] = 0
+		m.deferredChanges[btnInd] = 0
 		return true
 	}
 	return false
@@ -59,10 +62,19 @@ func (m *Mouse) ButtonDown(btn MouseButtonType) bool {
 func (m *Mouse) ButtonUp(btn MouseButtonType) bool {
 	btnInd := uint32(btn) + 1
 	if m.buttonLastEvent[btnInd] == 1 {
-		m.buttonLastEvent[btnInd] = 0
+		m.deferredChanges[btnInd] = 0
 		return true
 	}
 	return false
+}
+
+// ApplyDeferred is an internal function.
+// Function used to set proper values for button down/up event, does not affect button pressed.
+func (m *Mouse) ApplyDeferred() {
+	for btn, val := range m.deferredChanges {
+		m.buttonLastEvent[btn] = val
+	}
+	m.deferredChanges = make(map[uint32]uint32)
 }
 
 // SetLastEvent is an internal function that used to keep track of last mouse button event

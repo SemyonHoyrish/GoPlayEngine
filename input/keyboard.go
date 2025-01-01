@@ -10,6 +10,8 @@ type Keyboard struct {
 	// 0 - no last event, 1 - last event mouse up, 2 - last event mouse down,
 	// 3 - previous last event was mouse up, 4 - previous last event was mouse down
 	buttonLastEvent map[Scancode]uint32
+
+	deferredChanges map[Scancode]uint32
 }
 
 // NewKeyboard initialize new Keyboard object, should be called only once (done inside Engine)
@@ -17,6 +19,7 @@ func NewKeyboard() *Keyboard {
 	return &Keyboard{
 		state:           sdl.GetKeyboardState(),
 		buttonLastEvent: make(map[Scancode]uint32),
+		deferredChanges: make(map[Scancode]uint32),
 	}
 }
 
@@ -28,7 +31,7 @@ func (k *Keyboard) ButtonPressed(btn Scancode) bool {
 // ButtonDown returns true if last event for provided button was key down.
 func (k *Keyboard) ButtonDown(btn Scancode) bool {
 	if k.buttonLastEvent[btn] == 2 {
-		k.buttonLastEvent[btn] = 4
+		k.deferredChanges[btn] = 4
 		return true
 	}
 	return false
@@ -37,7 +40,7 @@ func (k *Keyboard) ButtonDown(btn Scancode) bool {
 // ButtonUp returns true if last event for provided button was key up.
 func (k *Keyboard) ButtonUp(btn Scancode) bool {
 	if k.buttonLastEvent[btn] == 1 {
-		k.buttonLastEvent[btn] = 3
+		k.deferredChanges[btn] = 3
 		return true
 	}
 	return false
@@ -51,6 +54,15 @@ func (k *Keyboard) SetLastEvent(e *sdl.KeyboardEvent) {
 	} else if e.Type == sdl.KEYDOWN && k.buttonLastEvent[e.Keysym.Scancode] != 4 {
 		k.buttonLastEvent[e.Keysym.Scancode] = 2
 	}
+}
+
+// ApplyDeferred is an internal function.
+// Function used to set proper values for key down/up event, does not affect key pressed.
+func (k *Keyboard) ApplyDeferred() {
+	for btn, val := range k.deferredChanges {
+		k.buttonLastEvent[btn] = val
+	}
+	k.deferredChanges = make(map[Scancode]uint32)
 }
 
 // GetButtonName returns human-readable name for provided scancode

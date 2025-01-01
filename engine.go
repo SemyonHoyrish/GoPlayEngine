@@ -282,6 +282,9 @@ func (e *Engine) Run() {
 				e.activeSceneNoFunctionReported = true
 			}
 
+			e.GetMouse().ApplyDeferred()
+			e.GetKeyboard().ApplyDeferred()
+
 			nodes := e.activeScene.GetAllNodes()
 
 			color := e.GetActiveScene().GetBackgroundColor()
