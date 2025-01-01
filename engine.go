@@ -23,7 +23,8 @@ type Engine struct {
 	window   *sdl.Window
 	renderer *sdl.Renderer
 
-	mouse *input.Mouse
+	mouse    *input.Mouse
+	keyboard *input.Keyboard
 
 	// TODO: move to engine configuration
 	maxEventsPolledPerRender int
@@ -41,6 +42,7 @@ func NewEngine() *Engine {
 		window:                        nil,
 		renderer:                      nil,
 		mouse:                         input.NewMouse(),
+		keyboard:                      input.NewKeyboard(),
 
 		maxEventsPolledPerRender: 10,
 	}
@@ -219,9 +221,14 @@ func (e *Engine) render(nodes []core.BaseNodeInterface) {
 	}
 }
 
-// GetMouse returns Engine instance of input.Mouse, which is preferable to use
+// GetMouse returns Engine instance of input.Mouse, the only initialized instance you should use
 func (e *Engine) GetMouse() *input.Mouse {
 	return e.mouse
+}
+
+// GetKeyboard returns Engine instance of input.Keyboard, the only initialized instance you should use
+func (e *Engine) GetKeyboard() *input.Keyboard {
+	return e.keyboard
 }
 
 // GetTicks returns number of milliseconds since SDL was initialized in NewEngine function
@@ -255,9 +262,12 @@ func (e *Engine) Run() {
 				case *sdl.MouseButtonEvent:
 					e.GetMouse().SetLastEvent(event.(*sdl.MouseButtonEvent))
 
+				case *sdl.KeyboardEvent:
+					e.GetKeyboard().SetLastEvent(event.(*sdl.KeyboardEvent))
+
 				}
 
-				if iters == e.maxEventsPolledPerRender {
+				if iters >= e.maxEventsPolledPerRender {
 					break
 				}
 			}

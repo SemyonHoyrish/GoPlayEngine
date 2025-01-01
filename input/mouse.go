@@ -6,16 +6,17 @@ import (
 )
 
 // Mouse represent mouse controller.
-// It is preferable to use one instance of Mouse, which initialized in Engine,
-// rather than initialize multiple.
+// It is required to use one instance of Mouse, which initialized by Engine (Engine.GetMouse).
 type Mouse struct {
 	// 0 - no last event, 1 - last event mouse up, 2 - last event mouse down
-	buttonLastEvent map[MouseButtonType]uint32
+	// uint32 used instead of MouseButtonType because sdl mouse event provides some index which starts from 1 for some reason
+	buttonLastEvent map[uint32]uint32
 }
 
+// NewMouse initialize new Mouse object, should be called only once (done inside Engine)
 func NewMouse() *Mouse {
 	return &Mouse{
-		buttonLastEvent: make(map[MouseButtonType]uint32),
+		buttonLastEvent: make(map[uint32]uint32),
 	}
 }
 
@@ -46,8 +47,9 @@ func (m *Mouse) ButtonPressed(btn MouseButtonType) bool {
 
 // ButtonDown returns true if last event for provided button was mouse button down.
 func (m *Mouse) ButtonDown(btn MouseButtonType) bool {
-	if m.buttonLastEvent[btn] == 2 {
-		m.buttonLastEvent[btn] = 0
+	btnInd := uint32(btn) + 1
+	if m.buttonLastEvent[btnInd] == 2 {
+		m.buttonLastEvent[btnInd] = 0
 		return true
 	}
 	return false
@@ -55,8 +57,9 @@ func (m *Mouse) ButtonDown(btn MouseButtonType) bool {
 
 // ButtonUp returns true if last event for provided button was mouse button up.
 func (m *Mouse) ButtonUp(btn MouseButtonType) bool {
-	if m.buttonLastEvent[btn] == 1 {
-		m.buttonLastEvent[btn] = 0
+	btnInd := uint32(btn) + 1
+	if m.buttonLastEvent[btnInd] == 1 {
+		m.buttonLastEvent[btnInd] = 0
 		return true
 	}
 	return false
@@ -65,8 +68,8 @@ func (m *Mouse) ButtonUp(btn MouseButtonType) bool {
 // SetLastEvent is an internal function that used to keep track of last mouse button event
 func (m *Mouse) SetLastEvent(e *sdl.MouseButtonEvent) {
 	if e.Type == sdl.MOUSEBUTTONUP {
-		m.buttonLastEvent[MouseButtonType(e.Button)] = 1
-	} else {
-		m.buttonLastEvent[MouseButtonType(e.Button)] = 2
+		m.buttonLastEvent[uint32(e.Button)] = 1
+	} else if e.Type == sdl.MOUSEBUTTONDOWN {
+		m.buttonLastEvent[uint32(e.Button)] = 2
 	}
 }
