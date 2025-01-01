@@ -26,6 +26,9 @@ type Engine struct {
 	mouse    *input.Mouse
 	keyboard *input.Keyboard
 
+	previousTicks uint64
+	deltaTime     uint64
+
 	// TODO: move to engine configuration
 	maxEventsPolledPerRender int
 
@@ -43,6 +46,8 @@ func NewEngine() *Engine {
 		renderer:                      nil,
 		mouse:                         input.NewMouse(),
 		keyboard:                      input.NewKeyboard(),
+		previousTicks:                 0,
+		deltaTime:                     0,
 
 		maxEventsPolledPerRender: 10,
 	}
@@ -67,6 +72,8 @@ func NewEngine() *Engine {
 
 	engine.window = w
 	engine.renderer = r
+
+	engine.previousTicks = engine.GetTicks()
 
 	engine.cleanUp = func() {
 		engine.renderer.Destroy()
@@ -236,6 +243,11 @@ func (e *Engine) GetTicks() uint64 {
 	return sdl.GetTicks64()
 }
 
+// GetDeltaTime returns difference between two frames in milliseconds.
+func (e *Engine) GetDeltaTime() uint64 {
+	return e.deltaTime
+}
+
 // Run creates window and start rendering activeScene.
 //
 // It is required to call Run in main thread
@@ -275,6 +287,10 @@ func (e *Engine) Run() {
 
 		// Render
 		{
+			curTicks := e.GetTicks()
+			e.deltaTime = curTicks - e.previousTicks
+			e.previousTicks = curTicks
+
 			if e.activeScene.GetUpdateFunction() != nil {
 				e.activeScene.GetUpdateFunction()()
 			} else if !e.activeSceneNoFunctionReported {
