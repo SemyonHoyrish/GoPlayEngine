@@ -35,6 +35,8 @@ type BaseNodeInterface interface {
 	GetSize() basic.Size
 	SetSize(basic.Size)
 
+	GetRealSize() basic.Size
+
 	GetLayer() LayerType
 	SetLayer(LayerType)
 
@@ -93,6 +95,8 @@ func (b *BaseNode) GetSize() basic.Size { return b.size }
 // SetSize used to override size of node, e.g. size of texture for ObjectNode and size of rendered text for TextNode.
 // Should be kept as zero, if other is not intended
 func (b *BaseNode) SetSize(s basic.Size) { b.size = s }
+// GetRealSize returns size of node calculated of inner content size of the node and node override size, set by SetSize.
+func (b *BaseNode) GetRealSize() basic.Size { return b.size }
 
 // GetLayer returns layer of rendering
 func (b *BaseNode) GetLayer() LayerType { return b.layer }

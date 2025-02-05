@@ -1,5 +1,10 @@
 package core
 
+import (
+	"fmt"
+	"github.com/SemyonHoyrish/GoPlayEngine/basic"
+)
+
 // ObjectNodeInterface describes object node, most common node of game engine,
 // which used to render primitives or textures, or to group multiple nodes.
 type ObjectNodeInterface interface {
@@ -32,6 +37,19 @@ func NewObjectNode() *ObjectNode {
 
 // GetNodeType used internally to determine which node passed to polymorph function
 func (n *ObjectNode) GetNodeType() NodeType { return ObjectNodeType }
+
+// GetRealSize returns size of node calculated of inner content size of the node and node override size, set by SetSize.
+func (n *ObjectNode) GetRealSize() basic.Size {
+	size := n.GetSize()
+	if size.Width == 0 && size.Height == 0 && n.texture != nil {
+		size = n.texture.GetSize()
+		if size.Width == 0 && size.Height == 0 {
+			err := fmt.Errorf("size of node (id=%d) is zero still after resolution", n.GetID())
+			fmt.Println(err)
+		}
+	}
+	return size
+}
 
 // GetChildren returns slice of all children attached to this node
 func (n *ObjectNode) GetChildren() []BaseNodeInterface {

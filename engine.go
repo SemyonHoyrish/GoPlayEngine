@@ -110,14 +110,7 @@ func (e *Engine) render(nodes []core.BaseNodeInterface) {
 			t := objNode.GetTexture()
 
 			if t != nil {
-				size := node.GetSize()
-				if size.Width == 0 && size.Height == 0 {
-					size = t.GetSize()
-					if size.Width == 0 && size.Height == 0 {
-						err := fmt.Errorf("size of node (id=%d) is zero still after resolution", objNode.GetID())
-						fmt.Println(err)
-					}
-				}
+				size := node.GetRealSize()
 
 				if t.GetPrimitive() != nil {
 					// TODO: handle errors
@@ -191,26 +184,15 @@ func (e *Engine) render(nodes []core.BaseNodeInterface) {
 			font := textNode.GetFont()
 			ttfFont := font.GetTTFFont(textNode.GetTextSize())
 			// TODO: handle error
-			textContent := textNode.GetText()
 			//surf, _ := ttfFont.RenderUTF8Solid(textContent, textNode.GetColor())
 			surf, _ := ttfFont.RenderUTF8Blended(textNode.GetText(), textNode.GetColor())
 
-			size := node.GetSize()
-			if size.Width == 0 && size.Height == 0 {
-				w, h, _ := ttfFont.SizeUTF8(textContent)
-				if w == 0 && h == 0 {
-					err := fmt.Errorf("size of node (id=%d) is zero still after resolution", textNode.GetID())
-					fmt.Println(err)
-				} else {
-					size.Width = float32(w)
-					size.Height = float32(h)
-				}
-			}
+			size := textNode.GetRealSize()
 
 			tx, _ := e.renderer.CreateTextureFromSurface(surf)
 			e.renderer.CopyF(tx, nil, &sdl.FRect{
-				X: textNode.GetAbsolutePosition().X,
-				Y: textNode.GetAbsolutePosition().Y,
+				X: textNode.GetAbsolutePosition().X - size.Width/2,
+				Y: textNode.GetAbsolutePosition().Y - size.Height/2,
 				W: size.Width,
 				H: size.Height,
 			})

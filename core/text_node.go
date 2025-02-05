@@ -1,6 +1,8 @@
 package core
 
 import (
+	"fmt"
+	"github.com/SemyonHoyrish/GoPlayEngine/basic"
 	"github.com/SemyonHoyrish/GoPlayEngine/primitive"
 	"github.com/SemyonHoyrish/GoPlayEngine/resource"
 )
@@ -37,7 +39,7 @@ func NewTextNode() *TextNode {
 	return &TextNode{
 		BaseNode: *NewBaseNode(),
 		text:     "",
-		textSize: 0,
+		textSize: 12,
 		font:     nil,
 		color:    primitive.Color{0, 0, 0, 255},
 	}
@@ -45,6 +47,24 @@ func NewTextNode() *TextNode {
 
 // GetNodeType used internally to determine which node passed to polymorph function
 func (t *TextNode) GetNodeType() NodeType { return TextNodeType }
+
+// GetRealSize returns size of node calculated of inner content size of the node and node override size, set by SetSize.
+func (t *TextNode) GetRealSize() basic.Size {
+	font := t.GetFont()
+	ttfFont := font.GetTTFFont(t.GetTextSize())
+	size := t.GetSize()
+	if size.Width == 0 && size.Height == 0 {
+		w, h, _ := ttfFont.SizeUTF8(t.GetText())
+		if w == 0 && h == 0 {
+			err := fmt.Errorf("size of node (id=%d) is zero still after resolution", t.GetID())
+			fmt.Println(err)
+		} else {
+			size.Width = float32(w)
+			size.Height = float32(h)
+		}
+	}
+	return size
+}
 
 // SetText set text rendered by node
 func (t *TextNode) SetText(text string) {
