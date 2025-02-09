@@ -2,32 +2,16 @@ package core
 
 import (
 	"github.com/SemyonHoyrish/GoPlayEngine/basic"
+	"github.com/SemyonHoyrish/GoPlayEngine/data_structures"
 	"github.com/SemyonHoyrish/GoPlayEngine/primitive"
 )
-
-// SceneInterface describes scene of game engine, that used to provide nodes to render, and update function.
-// update function called before render of every frame
-type SceneInterface interface {
-	basic.BaseInterface
-
-	AddNode(node BaseNodeInterface)
-	RemoveNode(node BaseNodeInterface) bool
-	FindNode(id basic.IDType) (BaseNodeInterface, bool)
-	GetAllNodes() []BaseNodeInterface
-
-	SetBackgroundColor(color primitive.Color)
-	GetBackgroundColor() primitive.Color
-
-	SetUpdateFunction(func())
-	GetUpdateFunction() func()
-}
 
 // Scene implements scene of game engine.
 // Scene have to be initialized with NewScene
 type Scene struct {
 	basic.Base
 
-	nodes []BaseNodeInterface
+	nodes data_structures.Set[*Node]
 
 	bgColor primitive.Color
 
@@ -37,51 +21,39 @@ type Scene struct {
 func NewScene() *Scene {
 	return &Scene{
 		Base:    basic.MakeBase(),
-		nodes:   make([]BaseNodeInterface, 0),
+		nodes:   data_structures.CreateSet[*Node](),
 		bgColor: primitive.Color{0, 0, 0, 255},
 	}
 }
 
 // AddNode adds node to scene nodes
-func (s *Scene) AddNode(node BaseNodeInterface) {
-	s.nodes = append(s.nodes, node)
+func (s *Scene) AddNode(node *Node) {
+	s.nodes.Add(node)
 }
 
 // RemoveNode tries to find and remove node based on pointer equality, return true on success, false on fail
-func (s *Scene) RemoveNode(node BaseNodeInterface) bool {
-	newNodes := make([]BaseNodeInterface, 0, len(s.nodes))
-	found := false
-	for _, n := range s.nodes {
-		if n != node {
-			newNodes = append(newNodes, n)
-		} else {
-			found = true
-		}
-	}
-
-	if found {
-		copy(s.nodes, newNodes)
-	}
-
-	return found
+func (s *Scene) RemoveNode(node *Node) bool {
+	return s.nodes.Remove(node)
 }
 
 // FindNode tries to find node based on node id (any node embeds Base, so have GetID() function),
-// returns (node, true) on success, (nil, false) on fail
-func (s *Scene) FindNode(id basic.IDType) (BaseNodeInterface, bool) {
-	for _, n := range s.nodes {
+// returns a pointer to the node on success, nil on fail
+func (s *Scene) FindNode(id basic.IDType) *Node {
+	for n := range s.nodes.Values() {
 		if n.GetID() == id {
-			return n, true
+			return n
 		}
 	}
 
-	return nil, false
+	return nil
 }
 
 // GetAllNodes returns all nodes attached to scene
-func (s *Scene) GetAllNodes() []BaseNodeInterface {
-	result := make([]BaseNodeInterface, len(s.nodes))
-	copy(result, s.nodes)
+func (s *Scene) GetAllNodes() []*Node {
+	result := make([]*Node, 0, s.nodes.Len())
+	for n := range s.nodes.Values() {
+		result = append(result, n)
+	}
 	return result
 }
 

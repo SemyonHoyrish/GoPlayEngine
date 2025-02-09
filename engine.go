@@ -97,20 +97,18 @@ func (e *Engine) GetActiveScene() *core.Scene {
 	return e.activeScene
 }
 
-func (e *Engine) render(nodes []core.BaseNodeInterface) {
+func (e *Engine) render(nodes []*core.Node) {
 	sort.Slice(nodes, func(i, j int) bool {
 		return nodes[i].GetLayer() < nodes[j].GetLayer()
 	})
 
 	for _, node := range nodes {
-		switch node.GetNodeType() {
-		case core.ObjectNodeType:
-			objNode := node.(core.ObjectNodeInterface)
-
-			t := objNode.GetTexture()
+		switch node.GetType() {
+		case core.NodeTypeObject:
+			t := node.GetTexture()
 
 			if t != nil {
-				size := node.GetRealSize()
+				size := node.GetCalculatedSize()
 
 				if t.GetPrimitive() != nil {
 					// TODO: handle errors
@@ -121,31 +119,34 @@ func (e *Engine) render(nodes []core.BaseNodeInterface) {
 
 					switch prim.GetPrimitiveType() {
 					case primitive.RectanglePrimitive:
-						e.renderer.FillRectF(&sdl.FRect{
-							X: objNode.GetAbsolutePosition().X - size.Width/2,
-							Y: objNode.GetAbsolutePosition().Y - size.Height/2,
+						err := e.renderer.FillRectF(&sdl.FRect{
+							X: node.GetAbsolutePosition().X - size.Width/2,
+							Y: node.GetAbsolutePosition().Y - size.Height/2,
 							W: size.Width,
 							H: size.Height,
 						})
+						if err != nil {
+							panic(err)
+						}
 					case primitive.CirclePrimitive:
 						if size.Width != size.Height {
-							fmt.Println(fmt.Errorf("circle width and height differ, possibly trying to override with node size (node id = %d)", objNode.GetID()))
+							fmt.Println(fmt.Errorf("circle width and height differ, possibly trying to override with node size (node id = %d)", node.GetID()))
 							break
 						}
 						gfx.FilledCircleColor(
 							e.renderer,
-							int32(objNode.GetAbsolutePosition().X-size.Width/2),
-							int32(objNode.GetAbsolutePosition().Y-size.Height/2),
+							int32(node.GetAbsolutePosition().X-size.Width/2),
+							int32(node.GetAbsolutePosition().Y-size.Height/2),
 							int32(size.Width),
 							c,
 						)
 					case primitive.EllipsePrimitive:
 						panic("TODO implement")
 					case primitive.LinePrimitive:
-						npos := objNode.GetPosition()
+						npos := node.GetPosition()
 						vec := prim.(primitive.Line).Definition
 						if npos != vec.From {
-							fmt.Println(fmt.Errorf("line start and node position differ (node id=%d). For more info see docs for primitive.Line", objNode.GetID()))
+							fmt.Println(fmt.Errorf("line start and node position differ (node id=%d). For more info see docs for primitive.Line", node.GetID()))
 							break
 						}
 						e.renderer.DrawLineF(vec.From.X, vec.From.Y, vec.To.X, vec.To.Y)
@@ -153,14 +154,14 @@ func (e *Engine) render(nodes []core.BaseNodeInterface) {
 				} else if t.GetImage() != nil {
 					image := t.GetImage()
 					if image.GetSurface() == nil {
-						fmt.Println(fmt.Errorf("no image for node id %d", objNode.GetID()))
+						fmt.Println(fmt.Errorf("no image for node id %d", node.GetID()))
 					} else {
 						tx, err := e.renderer.CreateTextureFromSurface(image.GetSurface())
 						_ = err // TODO:
 
 						e.renderer.CopyF(tx, nil, &sdl.FRect{
-							X: objNode.GetAbsolutePosition().X - size.Width/2,
-							Y: objNode.GetAbsolutePosition().Y - size.Height/2,
+							X: node.GetAbsolutePosition().X - size.Width/2,
+							Y: node.GetAbsolutePosition().Y - size.Height/2,
 							W: size.Width,
 							H: size.Height,
 						})
@@ -172,41 +173,32 @@ func (e *Engine) render(nodes []core.BaseNodeInterface) {
 				}
 			}
 
-			childNodes := objNode.GetChildren()
-			baseChildNodes := make([]core.BaseNodeInterface, len(childNodes))
-			for i, chn := range childNodes {
-				baseChildNodes[i] = chn
-			}
-			e.render(baseChildNodes)
-
-		case core.TextNodeType:
-			textNode := node.(core.TextNodeInterface)
-			font := textNode.GetFont()
-			ttfFont := font.GetTTFFont(textNode.GetTextSize())
+		case core.NodeTypeText:
+			textInfo := node.GetTextInfo()
+			font := textInfo.Font
+			ttfFont := font.GetTTFFont(textInfo.TextSize)
 			// TODO: handle error
 			//surf, _ := ttfFont.RenderUTF8Solid(textContent, textNode.GetColor())
-			surf, _ := ttfFont.RenderUTF8Blended(textNode.GetText(), textNode.GetColor())
+			surf, _ := ttfFont.RenderUTF8Blended(textInfo.Text, textInfo.Color)
 
-			size := textNode.GetRealSize()
+			size := node.GetCalculatedSize()
 
 			tx, _ := e.renderer.CreateTextureFromSurface(surf)
 			e.renderer.CopyF(tx, nil, &sdl.FRect{
-				X: textNode.GetAbsolutePosition().X - size.Width/2,
-				Y: textNode.GetAbsolutePosition().Y - size.Height/2,
+				X: node.GetAbsolutePosition().X - size.Width/2,
+				Y: node.GetAbsolutePosition().Y - size.Height/2,
 				W: size.Width,
 				H: size.Height,
 			})
 
 			tx.Destroy()
 
-		case core.InputNodeType:
-			panic("TODO implement")
-
-		case core.BaseNodeType:
-			err := fmt.Errorf("BaseNodeType cannot be rendered, Node ID: %d", node.GetID())
-			fmt.Println(err)
-
+		case core.NodeTypeBase:
+			// We do not need to do anything when we encounter BaseNode, at least at the moment
 		}
+
+		childNodes := node.GetChildren()
+		e.render(childNodes)
 	}
 }
 
