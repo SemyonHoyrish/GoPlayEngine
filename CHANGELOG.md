@@ -1,3 +1,18 @@
+# [v0.5.0] Auto Overlaps & Node system rewrite
+### CHANGES
+Node system has been rewritten to make them much simpler. Now, there is only one struct `Node` that represents
+any node in Game Engine, based in `NodeType` field. At the same time, user interactions with nodes a pretty much the same, with very small changes, if any.
+
+### NEW
+Auto Overlaps for `Node`.
+Auto Overlap system will build a `ComposedOverlap` for a `Node` and all of its children by creating an `Overlap` with `CalculatedSize` of the node and position in center of that node for every node in selected node hierarchy.
+
+There is new functions for `Node`:
+- `AutoOverlap(bool)` - to enable or disable auto overlap.
+- `AutoOverlapEnabled() bool` - to get if auto overlap is enabled for this node.
+
+
+
 # [v0.4.0] Input handling & major fix
 ### NEW
 #### input handling
