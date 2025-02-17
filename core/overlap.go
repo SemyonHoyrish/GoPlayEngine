@@ -19,7 +19,7 @@ type Overlap struct {
 
 	x1, x2, y1, y2 float32
 
-	node            *BaseNode
+	node            *Node
 	composedOverlap *ComposedOverlap
 }
 
@@ -36,7 +36,7 @@ func NewOverlap(leftTop basic.Point, rightBottom basic.Point) *Overlap {
 }
 
 // SetNode internal function that links node and overlap. Should NOT be called by user.
-func (over *Overlap) SetNode(node *BaseNode) bool {
+func (over *Overlap) SetNode(node *Node) bool {
 	if node == nil {
 		if over.node == nil {
 			fmt.Println(fmt.Errorf("trying to detach overlap, that already not attached (overlap id = %v)", over.GetID()))
@@ -54,7 +54,7 @@ func (over *Overlap) SetNode(node *BaseNode) bool {
 
 // SetComposedOverlap is an internal function. Should NOT be called by user.
 func (over *Overlap) SetComposedOverlap(compOver *ComposedOverlap) {
-	if over.composedOverlap != nil {
+	if compOver != nil && over.composedOverlap != nil {
 		fmt.Println(fmt.Errorf("overriding composed overlap for node (node id = %d) (old compover id = %d) (new compover id = %d)", over.GetID(), over.composedOverlap.GetID(), compOver.GetID()))
 	}
 	over.composedOverlap = compOver
@@ -77,6 +77,11 @@ func (over *Overlap) GetAbsoluteValues() (float32, float32, float32, float32) {
 
 // OverlapsWith returns true if this overlap has an intersection with `other`.
 func (over *Overlap) OverlapsWith(other OverlapInterface) bool {
+	if other == nil {
+		fmt.Println(fmt.Errorf("OverlapsWith called on nil pointer (overlap_id=%d)", over.GetID()))
+		return false
+	}
+
 	if compOver, ok := other.(*ComposedOverlap); ok {
 		return compOver.OverlapsWith(over)
 	}

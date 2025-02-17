@@ -41,7 +41,13 @@ type Node struct {
 	// text node
 	textInfo *NodeTextInfo
 
-	// @todo: Overlaps
+	overlap OverlapInterface
+
+	// fields for auto overlap functionality
+	autoOverlap        *ComposedOverlap
+	autoOverlapEnabled bool
+	autoOverlapBuilt   bool
+	autoOverlapChild   bool
 }
 
 type NodeTextInfo struct {
@@ -203,6 +209,114 @@ func (n *Node) GetChildren() []*Node {
 	}
 
 	return val
+}
+
+func (n *Node) SetOverlap(o OverlapInterface) {
+	if n.autoOverlapChild == true {
+		fmt.Println(fmt.Errorf("cannot set overlap when auto overlap enabled (node_id=%d)", n.GetID()))
+		return
+	}
+	n.overlap = o
+	n.overlap.SetNode(n)
+}
+
+func (n *Node) GetOverlap() OverlapInterface {
+	if n.autoOverlap != nil {
+		return n.autoOverlap
+	}
+
+	return n.overlap
+}
+
+func (n *Node) RemoveOverlap() {
+	if n.autoOverlapChild == true {
+		fmt.Println(fmt.Errorf("cannot remove overlap when overlap enabled (node_id=%d)", n.GetID()))
+		return
+	}
+	if n.overlap != nil {
+		n.overlap.SetNode(nil)
+		n.overlap = nil
+	}
+}
+
+func (n *Node) AutoOverlap(enabled bool) {
+	n.autoOverlapEnabled = enabled
+}
+
+func (n *Node) AutoOverlapEnabled() bool {
+	return n.autoOverlapEnabled
+}
+
+func (n *Node) GetAutoOverlap() *ComposedOverlap {
+	return n.autoOverlap
+}
+
+func (n *Node) DestroyAutoOverlap() {
+	for ch := range n.children.Values() {
+		if ch.autoOverlapChild {
+			ch.DestroyAutoOverlap()
+		}
+	}
+
+	n.autoOverlapChild = false
+	n.RemoveOverlap()
+	n.autoOverlapBuilt = false
+}
+
+func (n *Node) BuildAutoOverlap(ignoreAutoOverlapSet bool, root *Node, rootOverlap *ComposedOverlap) *ComposedOverlap {
+	if !n.autoOverlapEnabled && !ignoreAutoOverlapSet {
+		fmt.Println(fmt.Errorf("cannot build auto overlap for node with auto overlap disabled (node_id=%d)", n.GetID()))
+		return nil
+	}
+
+	if root == nil && rootOverlap != nil || root != nil && rootOverlap == nil {
+		// TODO: report error
+	}
+
+	if rootOverlap == nil && root == nil && n.autoOverlapBuilt {
+		n.DestroyAutoOverlap()
+	}
+	if n.autoOverlapChild && root == nil {
+		fmt.Println(fmt.Errorf("cannot build auto overlap for root node (id=%d) because it is marked as a child of another auto overlap", n.GetID()))
+		return nil
+	} else if n.autoOverlapChild {
+		fmt.Println(fmt.Errorf("cannot build auto overlap for node (id=%d) because node (id=%d) is a child of another auto overlap", root.GetID(), n.GetID()))
+		return nil
+	}
+
+	isRootNode := false
+	if rootOverlap == nil && root == nil {
+		rootOverlap = NewComposedOverlap()
+		root = n
+		n.autoOverlapBuilt = true
+		isRootNode = true
+	}
+
+	size := n.GetCalculatedSize()
+
+	ov := NewOverlap(
+		basic.Point{-size.Width / 2, -size.Height / 2},
+		basic.Point{+size.Width / 2, +size.Height / 2},
+	)
+
+	if size != (basic.Size{0, 0}) {
+		n.SetOverlap(ov)
+		rootOverlap.Add(ov)
+	}
+	n.autoOverlapChild = true
+
+	if isRootNode {
+		n.autoOverlap = rootOverlap
+		rootOverlap.SetNode(n)
+	}
+
+	for ch := range n.children.Values() {
+
+		// for child nodes we ignore returned value
+		_ = ch.BuildAutoOverlap(true, root, rootOverlap)
+	}
+
+	return rootOverlap
 }
 
 // --- object node ---

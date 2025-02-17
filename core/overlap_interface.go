@@ -10,5 +10,5 @@ type OverlapInterface interface {
 
 	OverlapsWith(OverlapInterface) bool
 	MouseOver(*input.Mouse) bool
-	SetNode(*BaseNode) bool
+	SetNode(*Node) bool
 }

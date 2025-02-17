@@ -103,6 +103,10 @@ func (e *Engine) render(nodes []*core.Node) {
 	})
 
 	for _, node := range nodes {
+		if node.AutoOverlapEnabled() {
+			node.BuildAutoOverlap(false, nil, nil)
+		}
+
 		switch node.GetType() {
 		case core.NodeTypeObject:
 			t := node.GetTexture()

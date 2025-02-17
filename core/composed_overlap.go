@@ -13,7 +13,7 @@ import (
 type ComposedOverlap struct {
 	basic.Base
 
-	node     *BaseNode
+	node     *Node
 	overlaps []*Overlap
 }
 
@@ -25,7 +25,7 @@ func NewComposedOverlap() *ComposedOverlap {
 }
 
 // SetNode internal function that links node and overlap. Should NOT be called by user.
-func (co *ComposedOverlap) SetNode(node *BaseNode) bool {
+func (co *ComposedOverlap) SetNode(node *Node) bool {
 	if node == nil {
 		if co.node == nil {
 			fmt.Println(fmt.Errorf("trying to detach overlap, that already not attached (composed overlap id = %v)", co.GetID()))
@@ -56,6 +56,11 @@ func (co *ComposedOverlap) Add(overlap *Overlap) {
 // OverlapsWith returns true if any of underlying Overlaps overlapping with a target.
 // In case `other` also a ComposedOverlap, every pair is checked.
 func (co *ComposedOverlap) OverlapsWith(other OverlapInterface) bool {
+	if other == nil {
+		fmt.Println(fmt.Errorf("OverlapsWith called on nil pointer (overlap_id=%d)", co.GetID()))
+		return false
+	}
+
 	if over, ok := other.(*Overlap); ok {
 		for _, overlap := range co.overlaps {
 			if over.OverlapsWith(overlap) {
