@@ -147,13 +147,8 @@ func (e *Engine) render(nodes []*core.Node) {
 					case primitive.EllipsePrimitive:
 						panic("TODO implement")
 					case primitive.LinePrimitive:
-						npos := node.GetPosition()
-						vec := prim.(primitive.Line).Definition
-						if npos != vec.From {
-							fmt.Println(fmt.Errorf("line start and node position differ (node id=%d). For more info see docs for primitive.Line", node.GetID()))
-							break
-						}
-						e.renderer.DrawLineF(vec.From.X, vec.From.Y, vec.To.X, vec.To.Y)
+						pos := node.GetAbsolutePosition()
+						e.renderer.DrawLineF(pos.X-size.Width/2, pos.Y-size.Height/2, pos.X+size.Width/2, pos.Y+size.Height/2)
 					}
 				} else if t.GetImage() != nil {
 					image := t.GetImage()

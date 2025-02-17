@@ -4,6 +4,7 @@ package primitive
 type PrimitiveType uint32
 
 const (
+	Unknown            PrimitiveType = iota
 	RectanglePrimitive PrimitiveType = iota
 	CirclePrimitive    PrimitiveType = iota
 	EllipsePrimitive   PrimitiveType = iota

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/SemyonHoyrish/GoPlayEngine/basic"
 	"github.com/SemyonHoyrish/GoPlayEngine/input"
+	"github.com/SemyonHoyrish/GoPlayEngine/primitive"
 )
 
 // Overlap rectangle representation of area that can be overlapped with other OverlapInterfaces, or hovered by Mouse.
@@ -80,6 +81,33 @@ func (over *Overlap) OverlapsWith(other OverlapInterface) bool {
 	if other == nil {
 		fmt.Println(fmt.Errorf("OverlapsWith called on nil pointer (overlap_id=%d)", over.GetID()))
 		return false
+	}
+
+	{ // Disable overlaps for lines, because it makes no sense to overlaps a line as a full rectangle.
+		// This may confuse while using auto overlaps.
+
+		{
+			t := over.node.GetTexture()
+			if t != nil {
+				if t.GetPrimitive() != nil {
+					if t.GetPrimitive().GetPrimitiveType() == primitive.LinePrimitive {
+						return false
+					}
+				}
+			}
+		}
+		{
+			if otherOver, ok := other.(*Overlap); ok {
+				t := otherOver.node.GetTexture()
+				if t != nil {
+					if t.GetPrimitive() != nil {
+						if t.GetPrimitive().GetPrimitiveType() == primitive.LinePrimitive {
+							return false
+						}
+					}
+				}
+			}
+		}
 	}
 
 	if compOver, ok := other.(*ComposedOverlap); ok {
