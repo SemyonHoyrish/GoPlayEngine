@@ -6,6 +6,8 @@ import (
 	"github.com/SemyonHoyrish/GoPlayEngine/data_structures"
 	"github.com/SemyonHoyrish/GoPlayEngine/primitive"
 	"github.com/SemyonHoyrish/GoPlayEngine/resource"
+	"github.com/SemyonHoyrish/GoPlayEngine/state"
+	"math"
 )
 
 // NodeType is an internal type
@@ -14,7 +16,7 @@ type NodeType uint32
 // LayerType determine order of rendering of objects (objects that renders later, renders on top of previous ones)
 // 0 used for objects that should be rendered first, e.g. background object.
 // Further increasing value (1, 2, 3 ...) allows to set expected order of rendering
-type LayerType uint32
+type LayerType uint64
 
 // NodeType represents type of specific node, used in polymorph functions.
 const (
@@ -23,6 +25,25 @@ const (
 	NodeTypeText
 )
 
+var SublayersOccupied map[LayerType]LayerType = make(map[LayerType]LayerType)
+
+type Layer struct {
+	userLayer LayerType
+	sublayer  LayerType
+}
+
+func LayerRequest(userLevel LayerType) LayerType {
+	l := SublayersOccupied[userLevel]
+	SublayersOccupied[userLevel] += 1
+
+	// HACK: we assume that no more than MaxUint32 objects will be allocated on each sublayer at one frame update.
+	if l >= math.MaxUint64-math.MaxUint32 {
+		state.GlobalFlags[state.GF_SublayerRebuild] = true
+	}
+
+	return l
+}
+
 type Node struct {
 	basic.Base
 
@@ -30,7 +51,7 @@ type Node struct {
 
 	position basic.Point
 	size     basic.Size
-	layer    LayerType
+	layer    Layer
 
 	parent   *Node
 	children data_structures.Set[*Node]
@@ -58,42 +79,60 @@ type NodeTextInfo struct {
 }
 
 func NewNode() *Node {
-	return &Node{
+	n := &Node{
 		Base:     basic.Base{},
 		nodeType: NodeTypeBase,
 		position: basic.Point{},
 		size:     basic.Size{},
+		layer:    Layer{0, LayerRequest(0)},
 		parent:   nil,
 		children: data_structures.CreateSet[*Node](),
 		texture:  nil,
 		textInfo: nil,
 	}
+	state.AllNodes.Add(state.StoreEntry{
+		EntryType: state.ET_Node,
+		Pointer:   n,
+	})
+	return n
 }
 
 func NewObjectNode(texture *Texture /* nillable */) *Node {
-	return &Node{
+	n := &Node{
 		Base:     basic.MakeBase(),
 		nodeType: NodeTypeObject,
 		position: basic.Point{},
 		size:     basic.Size{},
+		layer:    Layer{0, LayerRequest(0)},
 		parent:   nil,
 		children: data_structures.CreateSet[*Node](),
 		texture:  texture,
 		textInfo: nil,
 	}
+	state.AllNodes.Add(state.StoreEntry{
+		EntryType: state.ET_Node,
+		Pointer:   n,
+	})
+	return n
 }
 
 func NewTextNode(textInfo *NodeTextInfo) *Node {
-	return &Node{
+	n := &Node{
 		Base:     basic.MakeBase(),
 		nodeType: NodeTypeText,
 		position: basic.Point{},
 		size:     basic.Size{},
+		layer:    Layer{0, LayerRequest(0)},
 		parent:   nil,
 		children: data_structures.CreateSet[*Node](),
 		texture:  nil,
 		textInfo: textInfo,
 	}
+	state.AllNodes.Add(state.StoreEntry{
+		EntryType: state.ET_Node,
+		Pointer:   n,
+	})
+	return n
 }
 
 func (n *Node) GetType() NodeType {
@@ -165,11 +204,18 @@ func (n *Node) GetCalculatedSize() basic.Size {
 }
 
 func (n *Node) GetLayer() LayerType {
-	return n.layer
+	return n.layer.userLayer
+}
+
+func (n *Node) GetSublayer() LayerType {
+	return n.layer.sublayer
 }
 
 func (n *Node) SetLayer(layer LayerType) {
-	n.layer = layer
+	n.layer = Layer{
+		userLayer: layer,
+		sublayer:  LayerRequest(layer),
+	}
 }
 
 func (n *Node) GetParent() *Node {

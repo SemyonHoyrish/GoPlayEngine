@@ -1,3 +1,9 @@
+# [v0.6.0]
+### NEW
+Sublayers system for nodes to make sure they render in expected order. No changes for user level interactions.
+
+
+
 # [v0.5.1] Line primitive change
 Line primitive now has new definition and nodes with line primitive as texture are ignored when auto overlap is being built.
 

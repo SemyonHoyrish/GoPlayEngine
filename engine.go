@@ -5,6 +5,7 @@ import (
 	"github.com/SemyonHoyrish/GoPlayEngine/core"
 	"github.com/SemyonHoyrish/GoPlayEngine/input"
 	"github.com/SemyonHoyrish/GoPlayEngine/primitive"
+	"github.com/SemyonHoyrish/GoPlayEngine/state"
 	"github.com/veandco/go-sdl2/gfx"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/ttf"
@@ -82,6 +83,8 @@ func NewEngine() *Engine {
 		sdl.Quit()
 	}
 
+	state.GlobalFlags = make(map[state.FlagType]bool)
+
 	return engine
 }
 
@@ -99,6 +102,9 @@ func (e *Engine) GetActiveScene() *core.Scene {
 
 func (e *Engine) render(nodes []*core.Node) {
 	sort.Slice(nodes, func(i, j int) bool {
+		if nodes[i].GetLayer() == nodes[j].GetLayer() {
+			return nodes[i].GetSublayer() < nodes[j].GetSublayer()
+		}
 		return nodes[i].GetLayer() < nodes[j].GetLayer()
 	})
 
@@ -279,6 +285,7 @@ func (e *Engine) Run() {
 			color := e.GetActiveScene().GetBackgroundColor()
 			e.renderer.SetDrawColor(color.R, color.G, color.B, color.A)
 			e.renderer.Clear()
+			e.processFlags()
 			e.render(nodes)
 			e.renderer.Present()
 		}
@@ -286,6 +293,27 @@ func (e *Engine) Run() {
 
 	e.cleanUp()
 	os.Exit(e.exitCode)
+}
+
+func (e *Engine) processFlags() {
+	if state.GlobalFlags[state.GF_SublayerRebuild] {
+		for ul, _ := range core.SublayersOccupied {
+			core.SublayersOccupied[ul] = 1
+		}
+
+		for ne := range state.AllNodes.Values() {
+			if ne.EntryType == state.ET_Node && ne.Pointer != nil {
+				node, ok := ne.Pointer.(*core.Node)
+				if !ok {
+					panic("This should not happen")
+				}
+
+				node.SetLayer(node.GetLayer())
+			}
+		}
+
+		state.GlobalFlags[state.GF_SublayerRebuild] = false
+	}
 }
 
 // Exit tries to gracefully shutdown game engine and exit with provided code.

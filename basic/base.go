@@ -1,6 +1,7 @@
 package basic
 
-type IDType = uint64
+// TODO:? Can id be overflown?
+type IDType uint64
 
 // BaseInterface used only for internal purposes
 type BaseInterface interface {
